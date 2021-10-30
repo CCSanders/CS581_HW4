@@ -384,6 +384,9 @@ int main(int argc, char **argv)
     if (rank == 0) {
         endTime = getTime();
         
+        printf("Ending board:\n");
+        print2DArray(currentBoard, N);
+
         printf("Execution took %f s and lasted %d generations\n", endTime - startTime, currentGeneration);
         printf("Writing output to file: %s\n", fileName);
         writeArrToFile(currentBoard, N, filePointer);
