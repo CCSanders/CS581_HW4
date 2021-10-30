@@ -247,6 +247,9 @@ int main(int argc, char **argv)
         initArrayRandom(currentBoard, N);
         copyArray(previousBoard, currentBoard, N);
 
+        printf("Starting board:\n");
+        print2DArray(currentBoard, N);
+
         // Each process needs to know how big the board is, the maximum number generations, and the number of slices
         // Along with each process's slice of the board.
         processData[0] = N;
