@@ -1,0 +1,32 @@
+my mpi implementation
+
+declare variables:
+- size, rank of processes
+- i, j for row/column iterators
+- number of rows and columns, and max generations
+
+inits mpi, gets size and rank
+inits rows, cols, max gens, as above, and then checks to make sure that the usage is correct
+ 
+process 0 then does this:
+- checks arguments correctly
+- initializes the full board
+- sends initial information to everybody:
+   - board size, num of generations,
+   - then distrubtes a smaller array to every process
+
+that's the end of the process 0 exclusive code
+
+next, the local data buffers are created, and the messages sent above are received into them
+- local board of size [N * N/ s] is initialized and then received into. 
+- arrays for the edges of each board are generated, along with a corresponding edge that will be received from each neighbor
+then the generation loop starts!! every loop:
+- every array is going to send their bottom row to the next process, except the last row (which bottom ghost edge will be all 0s)
+- now every process except the first one, receive the row sent from the previous process, where the 1st process will set its top edge to all 0s. 
+- now every process will send their top row up except the first process. 
+- then every process will receive their bottom row except the bottom process
+- then, each cell gets processed like normal, except using both the slice belonging to this process and also the rows it received from other processes. 
+- next, the new data gets copied over the old data
+- finally, every time all slices are done, each slice gets sent to process 0 for printing. 
+
+end out generation loop, finalize mpi
