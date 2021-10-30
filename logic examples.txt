@@ -1,0 +1,74 @@
+Logic Walkthrough Example
+
+Output
+Process 0 received the following cells: 0 0 0 1 0 1 0 0 1 0 1 1
+Process 1 received the following cells: 1 0 0 0 1 1 1 1 1 0 0 1
+Process 2 received the following cells: 1 1 1 0 1 1 1 1 0 0 0 1
+
+I.E. Board Looks Like This At Start (previous board, about to be used to calc current board):
+0 0 0 1 0 1 //P0
+0 0 1 0 1 1 //P0
+1 0 0 0 1 1 //P1
+1 1 1 0 0 1 //P1
+1 1 1 0 1 1 //P2
+1 1 0 0 0 1 //P2
+
+From P1 Perspective, It just has this: 
+1 0 0 0 1 1 //P1
+1 1 1 0 0 1 //P1
+
+However, it needs both
+0 0 1 0 1 1 //P0 (bottom row of process "above")
+and 
+1 1 1 0 1 1 //P2 (top row of process below)
+at the start of every generation. 
+
+Edge cases? P0 row "above" should be all ghost cells. P(N-1) row "below" should be all ghost cells. 
+Corners of rows may need out of bounds indices because I am no longer padding the local cells. 
+
+Calculation for Sum of Neighbors P1:
+For NewCell [0][0]: PrevCell[0][1] + PrevCell[1][1] + PrevCell [0][1] + NeighborRowTop[0][0] + NeighborRowTop[0][1
+
+
+EXTRA EXAMPLE FOR MY BRAIN
+N = 6, N*N = 36, N*N/2 = 18, localN = 18
+
+localPrevBoard:
+1 1 1 0 0 1 //P1
+1 1 1 0 1 1 //P1
+1 1 0 0 0 1 //P1
+
+localRowTop = [1, 1, 1, 0, 0, 1] which maps indices [0, 1, 2, 3, 4, 5] of localPrevBoard to indices [0, 1, 2, 3, 4, 5] of localRowTop
+localRowBottom = [1, 1, 0, 0, 0, 1] which maps indices [12, 13, 14, 15, 16, 17] of localPrevBoard to indices [0, 1, 2, 3, 4, 5] of localRowBottom
+
+Row Length * Num Rows - 1 + i
+N * (localN / N - 1) + i
+6 * (18 / 6 - 1) + i
+6 * (3 - 1) + i
+6 * 2 + 1
+12 + 1 (works)
+
+Avoding Deadlock??
+If every process sends with blocking, no process will receive. 
+Solution? Does every process really need to send??
+for the 6x6, 3 process example above:
+
+Start top to bottom for each process's bottom row:
+t0) P0 -> Sends localRowBottom to P1, blocking for recv
+t1) P1 -> Sends localRowBottom to P2, blocking for recv
+*P2 -> Doesn't send a localRowBottom because there is no P3. This allows for a way out. *
+
+Recv from bottom up
+t2) P2 receives from P1, unblocks P1 to advance to it's blocking recv call. 
+t3) P1 receives from P0, unblocks P0 to advance. But P0 doesn't need to recv from above.
+
+Send bottom to top for each process's top row
+t4) P2 -> Sends localRowTop to P1, blocking for recv
+t5) P1 -> Sends localRowTop to P0, blocking for recv.
+*P0 doesn't send a localRowTop because there is no processes above."
+
+Recv from top down
+t6) P0 -> Receives into neighborRowTop from P1, unblocks P1
+t7) P1 -> Receives ^ from P2, unblocks P2, P2 doesn't need to receive from below. 
+
+Everybody has their respective rows and life is good.

@@ -77,7 +77,8 @@ void print2DArray(int *arr, int N)
 void printArray(int *arr, int N)
 {
     int i;
-    for (i = 0; i < N; i++){
+    for (i = 0; i < N; i++)
+    {
         printf("%d ", arr[i]);
     }
     printf("\n");
@@ -87,13 +88,94 @@ void printArray(int *arr, int N)
 // There's probably a million ways to iterate around a cell in a fancy way (i.e. if I was
 // in Java, I would create a direction enum and some helper functions to rotate around)
 // But just calculatiing each neighbor index by hand is a perfectly usable solution.
-int sumOfNeighbors(int *arr, int x, int y, int N)
+//
+// NEW TO MPI IMPLEMENTATION
+// THESE X & Y COORDS ARE NOW LOCAL PROCESS RELATIVE
+// WE NO LONGER HAVE GHOST CELLS TO PROTECT US FROM OUT OF BOUNDS INDICES
+// WE ALSO NEED TO USE NEIGHBOR ROWS
+int sumOfNeighbors(int *localProcessArr, int *neighborRowTop, int *neighborRowBottom, int x, int y, int N, int localN)
 {
     int rowPrev = (x - 1) * N;
     int row = rowPrev + N;
     int rowNext = row + N;
 
-    return arr[rowPrev + y - 1] + arr[rowPrev + y] + arr[rowPrev + y + 1] + arr[row + y - 1] + arr[row + y + 1] + arr[rowNext + y - 1] + arr[rowNext + y] + arr[rowNext + y + 1];
+    // Going to break this into a partial sum and then add them all together to make the logic a bit easier
+
+    int sumOfRowAbove = 0;
+    if (rowPrev < 0)
+    { //Use neighbor row top, can assume that x = 0.
+
+        sumOfRowAbove += neighborRowTop[y]; // Cell directly above, always included
+
+        if (y != 0) // Always include up left if not right most cell in row
+        {
+            sumOfRowAbove += neighborRowTop[y - 1];
+        }
+
+        if (y != N - 1)
+        { //Always include up right if not left most cell in row
+            sumOfRowAbove += neighborRowTop[y + 1];
+        }
+    }
+    else // Same as above but can use local array
+    {
+        sumOfRowAbove += localProcessArr[rowPrev + y]; // Cell directly above, always included
+
+        if (y != 0) // Always include up left if not right most cell in row
+        {
+            sumOfRowAbove += localProcessArr[rowPrev + y - 1];
+        }
+
+        if (y != N - 1)
+        { //Always include up right if not left most cell in row
+            sumOfRowAbove += localProcessArr[rowPrev + y + 1];
+        }
+    }
+
+
+    // For the current row, we don't need to worry about neighboring cells, just making sure we aren't the left or right most.
+    int sumOfMyRow = 0;
+    if (y != 0) // Always include up left if not right most cell in row
+    {
+        sumOfMyRow += localProcessArr[row + y - 1];
+    }
+
+    if (y != N - 1)
+    { //Always include up right if not left most cell in row
+        sumOfMyRow += localProcessArr[row + y + 1];
+    }
+
+    int sumOfRowBelow = 0;
+    if (rowNext >= localN)
+    {  // Use neighbor row bottom
+        sumOfRowBelow += neighborRowBottom[y]; // Cell directly below, always included
+
+        if (y != 0) // Always include up left if not right most cell in row
+        {
+            sumOfRowAbove += neighborRowTop[y - 1];
+        }
+
+        if (y != N - 1)
+        { //Always include up right if not left most cell in row
+            sumOfRowAbove += neighborRowTop[y + 1];
+        }
+    }
+    else
+    {
+        sumOfRowBelow += localProcessArr[rowNext + y]; // Cell directly above, always included
+
+        if (y != 0) // Always include up left if not right most cell in row
+        {
+            sumOfRowBelow += localProcessArr[rowNext + y - 1];
+        }
+
+        if (y != N - 1)
+        { //Always include up right if not left most cell in row
+            sumOfRowBelow += localProcessArr[rowNext + y + 1];
+        }
+    }
+
+    return sumOfRowAbove + sumOfRowBelow + sumOfMyRow;
 }
 
 void writeArrToFile(int *arr, int N, FILE *filePointer)
@@ -116,8 +198,9 @@ int main(int argc, char **argv)
 {
     //srand(time(NULL));
     srand(12345);
-    
+
     int size, rank, N, MAX_GENERATIONS;
+    double startTime, endTime;
 
     int *currentBoard = NULL;
     int *previousBoard = NULL;
@@ -125,7 +208,7 @@ int main(int argc, char **argv)
     int processData[2];
 
     char fileName[BUFSIZ];
-    FILE* filePointer;
+    FILE *filePointer;
 
     MPI_Init(&argc, &argv);
 
@@ -145,7 +228,7 @@ int main(int argc, char **argv)
         N = atoi(argv[1]);
         MAX_GENERATIONS = atoi(argv[2]);
 
-        sprintf(fileName, "%s/output..%d%d", argv[3], N, MAX_GENERATIONS);
+        sprintf(fileName, "%s/output.%d.%d.%d", argv[3], N, MAX_GENERATIONS, size);
 
         if ((filePointer = fopen(fileName, "w")) == NULL)
         {
@@ -160,7 +243,7 @@ int main(int argc, char **argv)
 
         //Note a key change from the other versions: I don't assign ghost cells to the initial board as this will mess
         //with how the distribution works. Each process will keep track of their own border cells, and I need to be particularly
-        //careful with the 0th and N-1th elements in a row. 
+        //careful with the 0th and N-1th elements in a row.
         initArrayRandom(currentBoard, N);
         copyArray(previousBoard, currentBoard, N);
 
@@ -176,46 +259,87 @@ int main(int argc, char **argv)
     MAX_GENERATIONS = processData[1];
 
     int localN = (N * N) / size;
+    int numLocalRows = localN / N;
+
     int *localBoard = (int *)malloc(localN * sizeof(int));
+    int *localPreviousBoard = (int *)malloc(localN * sizeof(int));
+
+    // Rows that will be traded amongst cells
+    int *localRowTop = (int *)malloc(N * sizeof(int));
+    int *localRowBottom = (int *)malloc(N * sizeof(int));
+    int *neighborRowTop = (int *)malloc(N * sizeof(int));
+    int *neighborRowBottom = (int *)malloc(N * sizeof(int));
+
     MPI_Scatter(currentBoard, localN, MPI_INT, localBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(previousBoard, localN, MPI_INT, localPreviousBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
 
-    printf("Process %d received the following cells: ", rank);
-    printArray(localBoard, localN);
-
-    /*
+    //printf("Process %d received the following cells: ", rank);
+    //printArray(localBoard, localN);
 
     int currentGeneration, i, j, index;
-    int neighbors, cellStatus, changeFlag = 0;
+    int neighbors, cellStatus, localChangeFlag = 0;
 
-    double startTime = getTime();
+    if(rank == 0){
+        startTime = getTime();
+    }
 
     for (currentGeneration = 1; currentGeneration <= MAX_GENERATIONS; currentGeneration++)
     {
-        for (i = 1; i < N - 1; i++)
+        //Populate local rows, initialize neighbor "ghost" cells to 0 (particularly useful for our first and last process, as they'll be avoiding some of the sends and recvs as below):
+        for (i = 0; i < N; i++)
         {
-            for (j = 1; j < N - 1; j++)
+            localRowTop[i] = localPreviousBoard[i];
+            localRowBottom[i] = localPreviousBoard[N * (numLocalRows - 1) + i];
+            neighborRowTop[i] = 0;
+            neighborRowBottom[i] = 0;
+        }
+
+        // Distribute local rows and receive neighboring rows. See logic examples.txt for the solution details.
+        if (rank != size - 1)
+        {
+            MPI_Send(localRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
+        }
+
+        if (rank != 0)
+        {
+            MPI_Recv(neighborRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+
+        if (rank != 0)
+        {
+            MPI_Send(localRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD);
+        }
+
+        if (rank != size - 1)
+        {
+            MPI_Recv(neighborRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+
+        for (i = 0; i < numLocalRows; i++)
+        {
+            for (j = 0; j < N; j++)
             {
                 index = i * N + j;
-                neighbors = sumOfNeighbors(previousBoard, i, j, N);
-                cellStatus = previousBoard[index];
+                neighbors = sumOfNeighbors(localPreviousBoard, neighborRowTop, neighborRowBottom, i, j, N, localN);
+                cellStatus = localPreviousBoard[index];
 
                 if (cellStatus == 1)
                 {
                     if (neighbors < 2)
                     {
                         // Current cell dies of loneliness
-                        currentBoard[index] = 0;
-                        changeFlag = 1;
+                        localBoard[index] = 0;
+                        localChangeFlag = 1;
                     }
                     else if (neighbors > 3)
                     {
                         // Current cell dies of overpopulation
-                        currentBoard[index] = 0;
-                        changeFlag = 1;
+                        localBoard[index] = 0;
+                        localChangeFlag = 1;
                     }
                     else
                     {
-                        currentBoard[index] = 1;
+                        localBoard[index] = 1;
                     }
                 }
                 else
@@ -223,37 +347,55 @@ int main(int argc, char **argv)
                     if (neighbors == 3)
                     {
                         //Current cell is not alive with exactly three neighbors, birth at this cell
-                        currentBoard[index] = 1;
-                        changeFlag = 1;
+                        localBoard[index] = 1;
+                        localChangeFlag = 1;
                     }
                     else
                     {
-                        currentBoard[index] = 0;
+                        localBoard[index] = 0;
                     }
                 }
             }
         }
 
-        if (changeFlag == 0)
+        // Similarly to OpenMP implementation, we need to add all of the local change flags to a global change flag and use this 
+        // to determine if all processes should break. 
+        int globalChangeFlag;
+        MPI_Allreduce(&localChangeFlag, &globalChangeFlag, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+        if (globalChangeFlag == 0)
         {
+            printf("Process %d has determined in iteration %d there are no global changes and is exiting\n", rank, currentGeneration);
             break;
         }
 
-        int *temp = previousBoard;
-        previousBoard = currentBoard;
-        currentBoard = temp;
-        changeFlag = 0;
+        int *temp = localPreviousBoard;
+        localPreviousBoard = localBoard;
+        localBoard = temp;
+        localChangeFlag = 0;
     }
 
-    double endTime = getTime();
-    printf("Execution took %f s and lasted %d generations\n", endTime - startTime, currentGeneration);
+    // Regather the board to print to file.
+    MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
 
-    printf("Writing output to file: %s\n", fileName);
-    writeArrToFile(currentBoard, N, filePointer);
-    */
+    if (rank == 0) {
+        endTime = getTime();
+        
+        printf("Execution took %f s and lasted %d generations\n", endTime - startTime, currentGeneration);
+        printf("Writing output to file: %s\n", fileName);
+        writeArrToFile(currentBoard, N, filePointer);
+        
+        free(currentBoard);
+        free(previousBoard);
+    }
 
-    //free(currentBoard);
-    //free(previousBoard);
+    // garbage collection
+    free(localBoard);
+    free(localPreviousBoard);
+    free(localRowTop);
+    free(localRowBottom);
+    free(neighborRowTop);
+    free(neighborRowBottom);
 
     MPI_Finalize();
     return 0;

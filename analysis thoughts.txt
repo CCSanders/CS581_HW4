@@ -1,0 +1,8 @@
+analysis thoughts
+
+trying to do the process 0 setup efficiently. is it more efficient to have one process atoi the arguments and
+distribute them to the other processes or for all processes to atoi the args, since they all have access to the
+arguments anyway? 
+another thing is that the allocation of the initial and previous board seems unneccesary since we immediately
+do another allocation for each process's local boards. we could probably just init a board randomly for each process,
+although the way im currently doing it is more oriented towards distributing preseeded boards 
