@@ -1,0 +1,111 @@
+0 0 0 1 0 1
+0 0 1 0 1 1
+1 0 0 0 1 1
+1 1 1 0 0 1
+1 1 1 0 1 1
+1 1 0 0 0 1
+
+add ghost cells: 
+0 0 0 0 0 0 0 0
+0 0 0 0 1 0 1 0
+0 0 0 1 0 1 1 0
+0 1 0 0 0 1 1 0
+0 1 1 1 0 0 1 0
+0 1 1 1 0 1 1 0 
+0 1 1 0 0 0 1 0
+0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0 (1)
+0 0 0 0 1 0 1 0
+0 0 0 0 0 0 0 0
+0 1 0 1 1 0 0 0
+0 0 0 1 0 0 0 0
+0 0 0 0 1 1 1 0
+0 1 0 1 0 1 1 0
+0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0 (2)
+0 0 0 0 0 0 0 0
+0 0 0 1 1 1 0 0
+0 0 1 1 1 0 0 0
+0 0 1 1 0 0 0 0
+0 0 0 1 0 0 1 0
+0 0 0 0 1 0 1 0
+0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0
+0 0 0 0 1 0 0 0
+0 0 1 0 0 1 0 0
+0 0 0 0 0 1 0 0
+0 0 0 0 0 0 0 0
+0 0 1 1 1 1 0 0
+0 0 0 0 0 1 0 0
+0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 1 1 0 0
+0 0 0 0 0 0 0 0
+0 0 0 1 1 1 0 0
+0 0 0 1 1 1 0 0
+0 0 0 1 0 1 0 0
+0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 1 0 0 0 0
+0 0 0 1 0 1 0 0
+0 0 1 0 0 0 1 0
+0 0 0 1 0 1 0 0
+0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 1 0 0 0
+0 0 1 1 1 0 0 0
+0 0 1 1 0 1 1 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 1 0 0 0
+0 0 1 0 0 0 0 0
+0 0 1 0 0 1 0 0
+0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 1 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+
+logic analysis
+
+top left of a slice: neighborTopRow[same pos] + neighborTopRow[right] + localBoard[right] + localBoard[down] + localBoard[down right]
+top right of a slice: neighborTopRow[same pos] + neighborTopRow[left] + localBoard[left] + localBoard[down] + localBoard[down left]
+bottom left of a slice: neighborBottomRow[same pos] + neighborBottomRow[right] + localBoard[right] + localBoard[up]+ localBoard[up right]
+bottom right of a slice: neighborBottomRow[same pos] + neighborBottomRow[left] + localBoard[left] + localBoard[up]+ localBoard[up left]
+top non-corner of a slice: neighborTopRow[same pos] + neighborTopRow[right] + neighborTopRow[left] + localBoard[right] + localBoard[left] + localBoard[down] + localBoard[down left] + localBoard[down right]
+bottom non-corner of a slice: neighborBottomRow[same pos] + neighborBottomRow[right] + neighborBottomRow[left] + localBoard[right] + localBoard[left] + localBoard[up] + localBoard[up left] + localBoard[up right]
+left edge of a slice: localBoard[right] + localBoard[up] + localBoard[down] + localBoard[up right] + localBoard[down right]
+right edge of a slice: localBoard[left] + localBoard[up] + localBoard[down] + localBoard[up left] + localBoard[down left]
+middle of a slice: localBoard[right] + localBoard[left] + localBoard[up] + localBoard[up right] + localBoard[up left] + localBoard[down] + localBoard[down right] + localBoard[down left]
+
+

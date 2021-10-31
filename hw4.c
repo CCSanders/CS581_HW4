@@ -151,12 +151,12 @@ int sumOfNeighbors(int *localProcessArr, int *neighborRowTop, int *neighborRowBo
 
         if (y != 0) // Always include up left if not right most cell in row
         {
-            sumOfRowAbove += neighborRowTop[y - 1];
+            sumOfRowAbove += neighborRowBottom[y - 1];
         }
 
         if (y != N - 1)
         { //Always include up right if not left most cell in row
-            sumOfRowAbove += neighborRowTop[y + 1];
+            sumOfRowAbove += neighborRowBottom[y + 1];
         }
     }
     else
