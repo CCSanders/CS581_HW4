@@ -74,7 +74,7 @@ int main(int argc, char **argv)
         assert(main_test_bed(0, 1, test_oscil_blinker, 5, 50, size, rank) == 51);
     }
 
-    if (6 % size  == 0)
+    if (6 % size == 0)
     {
         int test_oscil_beacon[] = {
             0, 0, 0, 0, 0, 0,
@@ -114,18 +114,19 @@ int main(int argc, char **argv)
     if (8 % size == 0)
     {
         int test_hw4[] = {
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 1, 0, 1, 0,
-            0, 0, 0, 1, 0, 1, 1, 0,
-            0, 1, 0, 0, 0, 1, 1, 0,
-            0, 1, 1, 1, 0, 0, 1, 0,
-            0, 1, 1, 1, 0, 1, 1, 0,
-            0, 1, 1, 0, 0, 0, 1, 0,
-            0, 0, 0, 0, 0, 0, 0, 0};
+            0, 0, 0, 1, 0, 1,
+            0, 0, 1, 0, 1, 1,
+            1, 0, 0, 0, 1, 1,
+            1, 1, 1, 0, 0, 1,
+            1, 1, 1, 0, 1, 1,
+            1, 1, 0, 0, 0, 1};
         main_test_bed(12345, 1, test_hw4, 8, 10, size, rank);
     }
 
-    printf("All tests completed successfully\n");
+    if(rank == 0) {
+        printf("All tests completed successfully\n");
+    }
+
     MPI_Finalize();
     return 0;
 }
