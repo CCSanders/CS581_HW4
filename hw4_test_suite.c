@@ -111,7 +111,7 @@ int main(int argc, char **argv)
         }
     }
 
-    if (8 % size == 0)
+    if (6 % size == 0)
     {
         int test_hw4[] = {
             0, 0, 0, 1, 0, 1,
@@ -120,7 +120,7 @@ int main(int argc, char **argv)
             1, 1, 1, 0, 0, 1,
             1, 1, 1, 0, 1, 1,
             1, 1, 0, 0, 0, 1};
-        main_test_bed(12345, 1, test_hw4, 8, 10, size, rank);
+        main_test_bed(12345, 1, test_hw4, 6, 10, size, rank);
     }
 
     if(rank == 0) {
