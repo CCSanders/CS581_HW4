@@ -61,7 +61,7 @@ int main(int argc, char **argv)
             0, 0, 1, 0, 0,
             0, 0, 0, 0, 0};
 
-        assert(main_test_bed(0, 1, test_still_tub, 5, 25, size, rank))== 1);
+        assert(main_test_bed(0, 1, test_still_tub, 5, 25, size, rank) == 1);
 
         //The oscillator tests should make the change detector flag flip indefinitely, ending the simulation on max iterations
         int test_oscil_blinker[] = {
