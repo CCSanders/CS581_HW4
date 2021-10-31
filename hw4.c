@@ -363,15 +363,20 @@ int main(int argc, char **argv)
 
         // Similarly to OpenMP implementation, we need to add all of the local change flags to a global change flag and use this 
         // to determine if all processes should break. 
-        int globalChangeFlag;
+        int globalChangeFlag = 0;
         MPI_Allreduce(&localChangeFlag, &globalChangeFlag, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
+        MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
+        if(rank == 0){
+            printf("Board after generation %d:\n", currentGeneration);
+            print2DArray(currentBoard, N);
+        }
+
         if (globalChangeFlag == 0)
-        {
-            printf("Process %d has determined in iteration %d there are no global changes and is exiting\n", rank, currentGeneration);
+            //printf("Process %d has determined in iteration %d there are no global changes and is exiting\n", rank, currentGeneration);
             break;
         } else {
-            printf("Process %d has determined in iteration %d there are still global changes (%d global changes, %d local changes) and is continuing!!g\n", rank, currentGeneration, globalChangeFlag, localChangeFlag);
+            //printf("Process %d has determined in iteration %d there are still global changes (%d global changes, %d local changes) and is continuing!!g\n", rank, currentGeneration, globalChangeFlag, localChangeFlag);
         }
 
         int *temp = localPreviousBoard;
