@@ -375,9 +375,9 @@ int main(int argc, char **argv)
         if (globalChangeFlag == 0)
             //printf("Process %d has determined in iteration %d there are no global changes and is exiting\n", rank, currentGeneration);
             break;
-        } else {
+        } //else {
             //printf("Process %d has determined in iteration %d there are still global changes (%d global changes, %d local changes) and is continuing!!g\n", rank, currentGeneration, globalChangeFlag, localChangeFlag);
-        }
+        //}
 
         int *temp = localPreviousBoard;
         localPreviousBoard = localBoard;
