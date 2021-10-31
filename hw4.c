@@ -424,14 +424,14 @@ int main(int argc, char **argv)
  * while testing. (i.e. I can call my program 100 times automatically with certain data and assert correctness)
  */
 
-int main_test_bed(int randomSeed, int preSeeded, char *testData, int N, int MAX_GENERATIONS, int size, int rank)
+int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_GENERATIONS, int size, int rank)
 {
     srand(randomSeed);
 
     double startTime, endTime;
 
-    char *currentBoard = NULL;
-    char *previousBoard = NULL;
+    int *currentBoard = NULL;
+    int *previousBoard = NULL;
 
     if (rank == 0)
     {

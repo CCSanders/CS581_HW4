@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     //The still tests should make the change detector flag not flip in generation 1, ending the simulation immediately.
     if (size % 4 == 0)
     {
-        char test_still_block[] = {
+        int test_still_block[] = {
             0, 0, 0, 0,
             0, 1, 1, 0,
             0, 1, 1, 0,
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 
     if (size % 5 == 0)
     {
-        char test_still_boat[] = {
+        int test_still_boat[] = {
             0, 0, 0, 0, 0,
             0, 1, 1, 0, 0,
             0, 1, 0, 1, 0,
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 
         assert(main_test_bed(0, 1, test_still_boat, 5, 25) == 1);
 
-        char test_still_tub[] = {
+        int test_still_tub[] = {
             0, 0, 0, 0, 0,
             0, 0, 1, 0, 0,
             0, 1, 0, 1, 0,
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
         assert(main_test_bed(0, 1, test_still_tub, 5, 25) == 1);
 
         //The oscillator tests should make the change detector flag flip indefinitely, ending the simulation on max iterations
-        char test_oscil_blinker[] = {
+        int test_oscil_blinker[] = {
             0, 0, 0, 0, 0,
             0, 0, 0, 0, 0,
             0, 1, 1, 1, 0,
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 
     if (size % 6 == 0)
     {
-        char test_oscil_beacon[] = {
+        int test_oscil_beacon[] = {
             0, 0, 0, 0, 0, 0,
             0, 1, 1, 0, 0, 0,
             0, 1, 0, 0, 0, 0,
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 
     if (size % 9 == 0)
     {
-        char test_r_pentomino[] = {
+        int test_r_pentomino[] = {
             0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 
     if (size % 8 == 0)
     {
-        char test_hw4[] = {
+        int test_hw4[] = {
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 1, 0, 1, 0,
             0, 0, 0, 1, 0, 1, 1, 0,
