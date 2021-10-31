@@ -192,7 +192,7 @@ void writeArrToFile(int *arr, int N, FILE *filePointer)
 }
 
 // END ARRAY UTILS
-
+/*
 int main(int argc, char **argv)
 {
     //srand(time(NULL));
@@ -246,8 +246,8 @@ int main(int argc, char **argv)
         initArrayRandom(currentBoard, N);
         copyArray(previousBoard, currentBoard, N);
 
-        printf("Starting board:\n");
-        print2DArray(currentBoard, N);
+        //printf("Starting board:\n");
+        //print2DArray(currentBoard, N);
 
         // Each process needs to know how big the board is, the maximum number generations, and the number of slices
         // Along with each process's slice of the board.
@@ -417,55 +417,182 @@ int main(int argc, char **argv)
     MPI_Finalize();
     return 0;
 }
+*/
 
 /**
  * This function is a scriptable version of my program that allows me to pass in preset data for me to use 
  * while testing. (i.e. I can call my program 100 times automatically with certain data and assert correctness)
  */
-/*
-int main_test_bed(int randomSeed, int preSeeded, char *testData, int N, int MAX_GENERATIONS)
-{
-    clock_t startTime = clock();
 
+int main_test_bed(int randomSeed, int preSeeded, char *testData, int N, int MAX_GENERATIONS, int size, int rank)
+{
     srand(randomSeed);
+
+    double startTime, endTime;
 
     char *currentBoard = NULL;
     char *previousBoard = NULL;
 
-    currentBoard = allocateArray(N);
-    previousBoard = allocateArray(N);
-
-    initArrayRandomWithGhostCells(currentBoard, N);
-
-    if (preSeeded == 1)
+    if (rank == 0)
     {
-        copyArray(currentBoard, testData, N);
+        currentBoard = allocateArray(N);
+        previousBoard = allocateArray(N);
+
+        initArrayRandom(currentBoard, N);
+
+        if (preSeeded == 1)
+        {
+            copyArray(currentBoard, testData, N);
+        }
+
+        copyArray(previousBoard, currentBoard, N);
     }
 
-    copyArray(previousBoard, currentBoard, N);
+    int localN = (N * N) / size;
+    int numLocalRows = localN / N;
 
-    int currentGeneration = 1;
-    while (currentGeneration < MAX_GENERATIONS && tick(currentBoard, previousBoard, N) == 1)
+    int *localBoard = (int *)malloc(localN * sizeof(int));
+    int *localPreviousBoard = (int *)malloc(localN * sizeof(int));
+
+    // Rows that will be traded amongst cells
+    int *localRowTop = (int *)malloc(N * sizeof(int));
+    int *localRowBottom = (int *)malloc(N * sizeof(int));
+    int *neighborRowTop = (int *)malloc(N * sizeof(int));
+    int *neighborRowBottom = (int *)malloc(N * sizeof(int));
+
+    MPI_Scatter(currentBoard, localN, MPI_INT, localBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(previousBoard, localN, MPI_INT, localPreviousBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
+
+    //printf("Process %d received the following cells: ", rank);
+    //printArray(localBoard, localN);
+
+    int currentGeneration, i, j, index;
+    int neighbors, cellStatus, localChangeFlag = 0;
+
+    if (rank == 0)
     {
-        char *temp = previousBoard;
-        previousBoard = currentBoard;
-        currentBoard = temp;
-
-        currentGeneration++;
+        startTime = getTime();
     }
 
-    if (N < 7)
+    for (currentGeneration = 1; currentGeneration <= MAX_GENERATIONS; currentGeneration++)
     {
-        print2DArray(currentBoard, N);
+        //Populate local rows, initialize neighbor "ghost" cells to 0 (particularly useful for our first and last process, as they'll be avoiding some of the sends and recvs as below):
+        for (i = 0; i < N; i++)
+        {
+            localRowTop[i] = localPreviousBoard[i];
+            localRowBottom[i] = localPreviousBoard[N * (numLocalRows - 1) + i];
+            neighborRowTop[i] = 0;
+            neighborRowBottom[i] = 0;
+        }
+
+        // Distribute local rows and receive neighboring rows. See logic examples.txt for the solution details.
+        if (rank != size - 1)
+        {
+            MPI_Send(localRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
+        }
+
+        if (rank != 0)
+        {
+            MPI_Recv(neighborRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+
+        if (rank != 0)
+        {
+            MPI_Send(localRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD);
+        }
+
+        if (rank != size - 1)
+        {
+            MPI_Recv(neighborRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+
+        for (i = 0; i < numLocalRows; i++)
+        {
+            for (j = 0; j < N; j++)
+            {
+                index = i * N + j;
+                neighbors = sumOfNeighbors(localPreviousBoard, neighborRowTop, neighborRowBottom, i, j, N, localN);
+                cellStatus = localPreviousBoard[index];
+
+                if (cellStatus == 1)
+                {
+                    if (neighbors < 2)
+                    {
+                        // Current cell dies of loneliness
+                        localBoard[index] = 0;
+                        localChangeFlag = 1;
+                    }
+                    else if (neighbors > 3)
+                    {
+                        // Current cell dies of overpopulation
+                        localBoard[index] = 0;
+                        localChangeFlag = 1;
+                    }
+                    else
+                    {
+                        localBoard[index] = 1;
+                    }
+                }
+                else
+                {
+                    if (neighbors == 3)
+                    {
+                        //Current cell is not alive with exactly three neighbors, birth at this cell
+                        localBoard[index] = 1;
+                        localChangeFlag = 1;
+                    }
+                    else
+                    {
+                        localBoard[index] = 0;
+                    }
+                }
+            }
+        }
+
+        // Similarly to OpenMP implementation, we need to add all of the local change flags to a global change flag and use this
+        // to determine if all processes should break.
+        int globalChangeFlag = 0;
+        MPI_Allreduce(&localChangeFlag, &globalChangeFlag, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+        MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
+
+        if (globalChangeFlag == 0)
+        {
+            break;
+        }
+
+        int *temp = localPreviousBoard;
+        localPreviousBoard = localBoard;
+        localBoard = temp;
+        localChangeFlag = 0;
     }
 
-    free(currentBoard);
-    free(previousBoard);
+    // Regather the board to print to file.
+    MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
 
-    clock_t endTime = clock();
-    double totalTime = (double)(endTime - startTime) * 1000.0 / CLOCKS_PER_SEC;
-    printf("Current test execution took %f ms and lasted %d generations\n", totalTime, currentGeneration);
+    if (rank == 0)
+    {
+        endTime = getTime();
+
+        if (N < 10)
+        {
+            printf("Ending board:\n");
+            print2DArray(currentBoard, N);
+        }
+
+        printf("Current test execution took %f ms and lasted %d generations\n", endTime - startTime, currentGeneration);
+
+        free(currentBoard);
+        free(previousBoard);
+    }
+
+    // garbage collection
+    free(localBoard);
+    free(localPreviousBoard);
+    free(localRowTop);
+    free(localRowBottom);
+    free(neighborRowTop);
+    free(neighborRowBottom);
 
     return currentGeneration;
 }
-*/
