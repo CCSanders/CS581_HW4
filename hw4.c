@@ -132,7 +132,6 @@ int sumOfNeighbors(int *localProcessArr, int *neighborRowTop, int *neighborRowBo
         }
     }
 
-
     // For the current row, we don't need to worry about neighboring cells, just making sure we aren't the left or right most.
     int sumOfMyRow = 0;
     if (y != 0) // Always include up left if not right most cell in row
@@ -147,7 +146,7 @@ int sumOfNeighbors(int *localProcessArr, int *neighborRowTop, int *neighborRowBo
 
     int sumOfRowBelow = 0;
     if (rowNext >= localN)
-    {  // Use neighbor row bottom
+    {                                          // Use neighbor row bottom
         sumOfRowBelow += neighborRowBottom[y]; // Cell directly below, always included
 
         if (y != 0) // Always include up left if not right most cell in row
@@ -282,7 +281,8 @@ int main(int argc, char **argv)
     int currentGeneration, i, j, index;
     int neighbors, cellStatus, localChangeFlag = 0;
 
-    if(rank == 0){
+    if (rank == 0)
+    {
         startTime = getTime();
     }
 
@@ -361,22 +361,25 @@ int main(int argc, char **argv)
             }
         }
 
-        // Similarly to OpenMP implementation, we need to add all of the local change flags to a global change flag and use this 
-        // to determine if all processes should break. 
+        // Similarly to OpenMP implementation, we need to add all of the local change flags to a global change flag and use this
+        // to determine if all processes should break.
         int globalChangeFlag = 0;
         MPI_Allreduce(&localChangeFlag, &globalChangeFlag, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
         MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
-        if(rank == 0){
+
+        if (rank == 0)
+        {
             printf("Board after generation %d:\n", currentGeneration);
             print2DArray(currentBoard, N);
         }
 
         if (globalChangeFlag == 0)
+        {
             //printf("Process %d has determined in iteration %d there are no global changes and is exiting\n", rank, currentGeneration);
             break;
         } //else {
-            //printf("Process %d has determined in iteration %d there are still global changes (%d global changes, %d local changes) and is continuing!!g\n", rank, currentGeneration, globalChangeFlag, localChangeFlag);
+        //printf("Process %d has determined in iteration %d there are still global changes (%d global changes, %d local changes) and is continuing!!g\n", rank, currentGeneration, globalChangeFlag, localChangeFlag);
         //}
 
         int *temp = localPreviousBoard;
@@ -388,16 +391,17 @@ int main(int argc, char **argv)
     // Regather the board to print to file.
     MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
 
-    if (rank == 0) {
+    if (rank == 0)
+    {
         endTime = getTime();
-        
+
         printf("Ending board:\n");
         print2DArray(currentBoard, N);
 
         printf("Execution took %f s and lasted %d generations\n", endTime - startTime, currentGeneration);
         printf("Writing output to file: %s\n", fileName);
         writeArrToFile(currentBoard, N, filePointer);
-        
+
         free(currentBoard);
         free(previousBoard);
     }
