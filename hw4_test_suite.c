@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     //https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Examples_of_patterns
 
     //The still tests should make the change detector flag not flip in generation 1, ending the simulation immediately.
-    if (size % 4 == 0)
+    if (4 % size == 0)
     {
         int test_still_block[] = {
             0, 0, 0, 0,
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
         assert(main_test_bed(0, 1, test_still_block, 4, 25, size, rank) == 1);
     }
 
-    if (size % 5 == 0)
+    if (5 % size == 0)
     {
         int test_still_boat[] = {
             0, 0, 0, 0, 0,
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
         assert(main_test_bed(0, 1, test_oscil_blinker, 5, 50, size, rank) == 50);
     }
 
-    if (size % 6 == 0)
+    if (6 % size  == 0)
     {
         int test_oscil_beacon[] = {
             0, 0, 0, 0, 0, 0,
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
     // and then run it again 100 times and make sure that it continues to end on
     // the same generation.
 
-    if (size % 9 == 0)
+    if (9 % size == 0)
     {
         int test_r_pentomino[] = {
             0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
         }
     }
 
-    if (size % 8 == 0)
+    if (8 % size == 0)
     {
         int test_hw4[] = {
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -126,5 +126,6 @@ int main(int argc, char **argv)
     }
 
     printf("All tests completed successfully\n");
+    MPI_Finalize();
     return 0;
 }
