@@ -40,7 +40,7 @@ int main(int argc, char **argv)
             0, 1, 1, 0,
             0, 0, 0, 0};
 
-        assert(main_test_bed(0, 1, test_still_block, 4, 25) == 1);
+        assert(main_test_bed(0, 1, test_still_block, 4, 25, size, rank) == 1);
     }
 
     if (size % 5 == 0)
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
             0, 0, 1, 0, 0,
             0, 0, 0, 0, 0};
 
-        assert(main_test_bed(0, 1, test_still_boat, 5, 25) == 1);
+        assert(main_test_bed(0, 1, test_still_boat, 5, 25, size, rank) == 1);
 
         int test_still_tub[] = {
             0, 0, 0, 0, 0,
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
             0, 0, 1, 0, 0,
             0, 0, 0, 0, 0};
 
-        assert(main_test_bed(0, 1, test_still_tub, 5, 25) == 1);
+        assert(main_test_bed(0, 1, test_still_tub, 5, 25, size, rank))== 1);
 
         //The oscillator tests should make the change detector flag flip indefinitely, ending the simulation on max iterations
         int test_oscil_blinker[] = {
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
             0, 0, 0, 0, 0,
             0, 0, 0, 0, 0};
 
-        assert(main_test_bed(0, 1, test_oscil_blinker, 5, 50) == 50);
+        assert(main_test_bed(0, 1, test_oscil_blinker, 5, 50, size, rank) == 50);
     }
 
     if (size % 6 == 0)
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
             0, 0, 0, 1, 1, 0,
             0, 0, 0, 0, 0, 0};
 
-        assert(main_test_bed(0, 1, test_oscil_beacon, 6, 50) == 50);
+        assert(main_test_bed(0, 1, test_oscil_beacon, 6, 50, size, rank) == 50);
     }
 
     // Sanity test: make sure that the program executes the same way every time
@@ -104,10 +104,10 @@ int main(int argc, char **argv)
             0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0};
-        int sanity_generations = main_test_bed(0, 1, test_r_pentomino, 9, 500);
+        int sanity_generations = main_test_bed(0, 1, test_r_pentomino, 9, 500, size, rank);
         for (int i = 0; i < 100; i++)
         {
-            assert(main_test_bed(0, 1, test_r_pentomino, 9, 500) == sanity_generations);
+            assert(main_test_bed(0, 1, test_r_pentomino, 9, 500, size, rank) == sanity_generations);
         }
     }
 
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
             0, 1, 1, 1, 0, 1, 1, 0,
             0, 1, 1, 0, 0, 0, 1, 0,
             0, 0, 0, 0, 0, 0, 0, 0};
-        main_test_bed(12345, 1, test_hw4, 8, 10);
+        main_test_bed(12345, 1, test_hw4, 8, 10, size, rank);
     }
 
     printf("All tests completed successfully\n");
