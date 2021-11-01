@@ -267,7 +267,8 @@ int main(int argc, char **argv)
     for (int i = 0; i < size; i++)
     {
         sendCounts[i] = N / size;
-        if(i == size - 1 && N % size != 0) {
+        if (i == size - 1 && N % size != 0)
+        {
             sendCounts[i] += N % size;
         }
 
@@ -383,8 +384,6 @@ int main(int argc, char **argv)
         int globalChangeFlag = 0;
         MPI_Allreduce(&localChangeFlag, &globalChangeFlag, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-        MPI_Gatherv(localBoard, totalLocalCells, MPI_INT, currentBoard, sendCounts, displacement, MPI_INT, 0, MPI_COMM_WORLD);
-
         /*
         if (rank == 0)
         {
@@ -395,11 +394,8 @@ int main(int argc, char **argv)
 
         if (globalChangeFlag == 0)
         {
-            //printf("Process %d has determined in iteration %d there are no global changes and is exiting\n", rank, currentGeneration);
             break;
-        } //else {
-        //printf("Process %d has determined in iteration %d there are still global changes (%d global changes, %d local changes) and is continuing!!g\n", rank, currentGeneration, globalChangeFlag, localChangeFlag);
-        //}
+        }
 
         int *temp = localPreviousBoard;
         localPreviousBoard = localBoard;
@@ -445,7 +441,7 @@ int main(int argc, char **argv)
  * This function is a scriptable version of my program that allows me to pass in preset data for me to use 
  * while testing. (i.e. I can call my program 100 times automatically with certain data and assert correctness)
  */
-/*
+///*
 int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_GENERATIONS, int size, int rank)
 {
     srand(randomSeed);
@@ -454,6 +450,9 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
 
     int *currentBoard = NULL;
     int *previousBoard = NULL;
+
+    int sendCounts[size];
+    int displacement[size];
 
     if (rank == 0)
     {
@@ -470,11 +469,26 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
         copyArray(previousBoard, currentBoard, N);
     }
 
-    int localN = (N * N) / size;
-    int numLocalRows = localN / N;
+    int sum = 0;
+    for (int i = 0; i < size; i++)
+    {
+        sendCounts[i] = N / size;
+        if (i == size - 1 && N % size != 0)
+        {
+            sendCounts[i] += N % size;
+        }
 
-    int *localBoard = (int *)malloc(localN * sizeof(int));
-    int *localPreviousBoard = (int *)malloc(localN * sizeof(int));
+        sendCounts[i] = sendCounts[i] * N;
+
+        displacement[i] = sum;
+        sum += sendCounts[i];
+    }
+
+    int totalLocalCells = sendCounts[rank];
+    int totalLocalRows = totalLocalCells / N;
+
+    int *localBoard = (int *)malloc(totalLocalCells * sizeof(int));
+    int *localPreviousBoard = (int *)malloc(totalLocalCells * sizeof(int));
 
     // Rows that will be traded amongst cells
     int *localRowTop = (int *)malloc(N * sizeof(int));
@@ -482,8 +496,8 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
     int *neighborRowTop = (int *)malloc(N * sizeof(int));
     int *neighborRowBottom = (int *)malloc(N * sizeof(int));
 
-    MPI_Scatter(currentBoard, localN, MPI_INT, localBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Scatter(previousBoard, localN, MPI_INT, localPreviousBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatterv(currentBoard, sendCounts, displacement, MPI_INT, localBoard, totalLocalCells, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatterv(previousBoard, sendCounts, displacement, MPI_INT, localPreviousBoard, totalLocalCells, MPI_INT, 0, MPI_COMM_WORLD);
 
     //printf("Process %d received the following cells: ", rank);
     //printArray(localBoard, localN);
@@ -502,7 +516,7 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
         for (i = 0; i < N; i++)
         {
             localRowTop[i] = localPreviousBoard[i];
-            localRowBottom[i] = localPreviousBoard[N * (numLocalRows - 1) + i];
+            localRowBottom[i] = localPreviousBoard[N * (totalLocalRows - 1) + i];
             neighborRowTop[i] = 0;
             neighborRowBottom[i] = 0;
         }
@@ -533,7 +547,7 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
             for (j = 0; j < N; j++)
             {
                 index = i * N + j;
-                neighbors = sumOfNeighbors(localPreviousBoard, neighborRowTop, neighborRowBottom, i, j, N, localN);
+                neighbors = sumOfNeighbors(localPreviousBoard, neighborRowTop, neighborRowBottom, i, j, N, totalLocalCells);
                 cellStatus = localPreviousBoard[index];
 
                 if (cellStatus == 1)
@@ -576,8 +590,6 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
         int globalChangeFlag = 0;
         MPI_Allreduce(&localChangeFlag, &globalChangeFlag, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-        MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
-
         if (globalChangeFlag == 0)
         {
             break;
@@ -590,7 +602,7 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
     }
 
     // Regather the board to print to file.
-    MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gatherv(localBoard, totalLocalCells, MPI_INT, currentBoard, sendCounts, displacement, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (rank == 0)
     {
@@ -618,4 +630,4 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
 
     return currentGeneration;
 }
-*/
+//*/
