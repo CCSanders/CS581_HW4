@@ -192,7 +192,7 @@ void writeArrToFile(int *arr, int N, FILE *filePointer)
 }
 
 // END ARRAY UTILS
-///*
+/*
 int main(int argc, char **argv)
 {
     //srand(time(NULL));
@@ -435,7 +435,7 @@ int main(int argc, char **argv)
     MPI_Finalize();
     return 0;
 }
-//*/
+*/
 
 /**
  * This function is a scriptable version of my program that allows me to pass in preset data for me to use 
@@ -542,7 +542,7 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
             MPI_Recv(neighborRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
-        for (i = 0; i < numLocalRows; i++)
+        for (i = 0; i < totalLocalRows; i++)
         {
             for (j = 0; j < N; j++)
             {
