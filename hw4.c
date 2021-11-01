@@ -200,22 +200,22 @@ int main(int argc, char **argv)
 
     int size, rank, N, MAX_GENERATIONS;
 
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     double startTime, endTime;
 
     int *currentBoard = NULL;
     int *previousBoard = NULL;
 
-    int processData[2];
-    int sendCounts[size];
-    int displacement[size];
-
     char fileName[BUFSIZ];
     FILE *filePointer;
 
     MPI_Init(&argc, &argv);
+
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int processData[2];
+    int sendCounts[size];
+    int displacement[size];
 
     // Restrict argument checking to just process 0, including setting up the gameboard and distributing the initial state.
     if (rank == 0)
