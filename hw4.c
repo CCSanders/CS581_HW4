@@ -384,14 +384,6 @@ int main(int argc, char **argv)
         int globalChangeFlag = 0;
         MPI_Allreduce(&localChangeFlag, &globalChangeFlag, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-        /*
-        if (rank == 0)
-        {
-            printf("Board after generation %d:\n", currentGeneration);
-            print2DArray(currentBoard, N);
-        }
-        */
-
         if (globalChangeFlag == 0)
         {
             break;
