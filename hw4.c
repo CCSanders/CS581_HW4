@@ -199,20 +199,23 @@ int main(int argc, char **argv)
     srand(12345);
 
     int size, rank, N, MAX_GENERATIONS;
+
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
     double startTime, endTime;
 
     int *currentBoard = NULL;
     int *previousBoard = NULL;
 
     int processData[2];
+    int sendCounts[size];
+    int displacement[size];
 
     char fileName[BUFSIZ];
     FILE *filePointer;
 
     MPI_Init(&argc, &argv);
-
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // Restrict argument checking to just process 0, including setting up the gameboard and distributing the initial state.
     if (rank == 0)
@@ -260,11 +263,25 @@ int main(int argc, char **argv)
     N = processData[0];
     MAX_GENERATIONS = processData[1];
 
-    int localN = (N * N) / size;
-    int numLocalRows = localN / N;
+    int sum = 0;
+    for (int i = 0; i < size; i++)
+    {
+        sendCounts[i] = N / size;
+        if(i == size - 1 && N % size != 0) {
+            sendCounts[i] += N % size;
+        }
 
-    int *localBoard = (int *)malloc(localN * sizeof(int));
-    int *localPreviousBoard = (int *)malloc(localN * sizeof(int));
+        sendCounts[i] = sendCounts[i] * N;
+
+        displacement[i] = sum;
+        sum += sendCounts[i];
+    }
+
+    int totalLocalCells = sendCounts[rank];
+    int totalLocalRows = totalLocalCells / N;
+
+    int *localBoard = (int *)malloc(totalLocalCells * sizeof(int));
+    int *localPreviousBoard = (int *)malloc(totalLocalCells * sizeof(int));
 
     // Rows that will be traded amongst cells
     int *localRowTop = (int *)malloc(N * sizeof(int));
@@ -272,8 +289,8 @@ int main(int argc, char **argv)
     int *neighborRowTop = (int *)malloc(N * sizeof(int));
     int *neighborRowBottom = (int *)malloc(N * sizeof(int));
 
-    MPI_Scatter(currentBoard, localN, MPI_INT, localBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Scatter(previousBoard, localN, MPI_INT, localPreviousBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatterv(currentBoard, sendCounts, displacement, MPI_INT, localBoard, totalLocalCells, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatterv(previousBoard, sendCounts, displacement, MPI_INT, localPreviousBoard, totalLocalCells, MPI_INT, 0, MPI_COMM_WORLD);
 
     //printf("Process %d received the following cells: ", rank);
     //printArray(localBoard, localN);
@@ -292,7 +309,7 @@ int main(int argc, char **argv)
         for (i = 0; i < N; i++)
         {
             localRowTop[i] = localPreviousBoard[i];
-            localRowBottom[i] = localPreviousBoard[N * (numLocalRows - 1) + i];
+            localRowBottom[i] = localPreviousBoard[N * (totalLocalRows - 1) + i];
             neighborRowTop[i] = 0;
             neighborRowBottom[i] = 0;
         }
@@ -318,12 +335,12 @@ int main(int argc, char **argv)
             MPI_Recv(neighborRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
-        for (i = 0; i < numLocalRows; i++)
+        for (i = 0; i < totalLocalRows; i++)
         {
             for (j = 0; j < N; j++)
             {
                 index = i * N + j;
-                neighbors = sumOfNeighbors(localPreviousBoard, neighborRowTop, neighborRowBottom, i, j, N, localN);
+                neighbors = sumOfNeighbors(localPreviousBoard, neighborRowTop, neighborRowBottom, i, j, N, totalLocalCells);
                 cellStatus = localPreviousBoard[index];
 
                 if (cellStatus == 1)
@@ -366,7 +383,7 @@ int main(int argc, char **argv)
         int globalChangeFlag = 0;
         MPI_Allreduce(&localChangeFlag, &globalChangeFlag, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-        MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Gatherv(localBoard, totalLocalCells, MPI_INT, currentBoard, sendCounts, displacement, MPI_INT, 0, MPI_COMM_WORLD);
 
         /*
         if (rank == 0)
@@ -397,7 +414,8 @@ int main(int argc, char **argv)
     {
         endTime = getTime();
 
-        if (N < 10) {
+        if (N < 10)
+        {
             printf("Ending board:\n");
             print2DArray(currentBoard, N);
         }
