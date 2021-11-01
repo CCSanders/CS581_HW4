@@ -1,18 +1,19 @@
-/************************************************************************************************************
-*  Name: Colin Sanders                                                                                      *
-*  Email: ccsanders6@crimson.ua.edu                                                                         *
-*  Date: November 4, 2021                                                                                   * 
-*  Course Section: CS 581                                                                                   *
-*  Homework #: 4                                                                                            *
-*                                                                                                           *
-*  The objective of this homework is to design and implement the "Game                                      *
-*  of Life" Program - a cellular automata simulation by John Horton                                         *
-*  Conway, efficiently using the Message Passing Interface (MPI).                                           *
-*                                                                                                           *
-*  To Compile: mpicc -g -Wall -O3 -o hw4 hw4.c                                                              *
-*  To run:                                                                                                  *
-*    mpiexec -n <NUMBER OF PROCESSES> ./hw4 <SIZE_OF_BOARD> <MAXIMUM_GENERATIONS> <OUTPUT_DIR> (Unix)       *
-*************************************************************************************************************/
+/******************************************************************************************************************
+*  Name: Colin Sanders                                                                                            *
+*  Email: ccsanders6@crimson.ua.edu                                                                               *
+*  Date: November 4, 2021                                                                                         * 
+*  Course Section: CS 581                                                                                         *
+*  Homework #: 4                                                                                                  *
+*                                                                                                                 *
+*  The objective of this homework is to design and implement the "Game                                            *
+*  of Life" Program - a cellular automata simulation by John Horton                                               *
+*  Conway, efficiently using the Message Passing Interface (MPI). This implementation uses                        *
+*  non-blocking point-to-point MPI calls.                                                                         *
+*                                                                                                                 *
+*  To Compile: mpicc -g -Wall -O3 -o hw4_non_blocking hw4_non_blocking.c                                          *
+*  To run:                                                                                                        *
+*  mpiexec -n <NUMBER OF PROCESSES> ./hw4_non_blocking <SIZE_OF_BOARD> <MAXIMUM_GENERATIONS> <OUTPUT_DIR> (Unix)  *
+*******************************************************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -216,6 +217,8 @@ int main(int argc, char **argv)
     int processData[2];
     int sendCounts[size];
     int displacement[size];
+    MPI_Request reqs[4];   // required variable for non-blocking calls
+    MPI_Status stats[4];   // required variable for Waitall routine
 
     // Restrict argument checking to just process 0, including setting up the gameboard and distributing the initial state.
     if (rank == 0)
@@ -230,7 +233,7 @@ int main(int argc, char **argv)
         N = atoi(argv[1]);
         MAX_GENERATIONS = atoi(argv[2]);
 
-        sprintf(fileName, "%s/output.%d.%d.%d", argv[3], N, MAX_GENERATIONS, size);
+        sprintf(fileName, "%s/output.nb.%d.%d.%d", argv[3], N, MAX_GENERATIONS, size);
 
         if ((filePointer = fopen(fileName, "w")) == NULL)
         {
@@ -316,27 +319,29 @@ int main(int argc, char **argv)
         }
 
         // Distribute local rows and receive neighboring rows. See logic examples.txt for the solution details.
-        if (rank != size - 1)
-        {
-            MPI_Send(localRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
-        }
-
+        int requestCount = 0;
         if (rank != 0)
         {
-            MPI_Recv(neighborRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-
-        if (rank != 0)
-        {
-            MPI_Send(localRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD);
+            MPI_Irecv(neighborRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, &reqs[requestCount++]);
         }
 
         if (rank != size - 1)
         {
-            MPI_Recv(neighborRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Irecv(neighborRowBottom, N, MPI_INT, rank + 1, 1, MPI_COMM_WORLD, &reqs[requestCount++]);
         }
 
-        for (i = 0; i < totalLocalRows; i++)
+        if (rank != 0)
+        {
+            MPI_Isend(localRowTop, N, MPI_INT, rank - 1, 1, MPI_COMM_WORLD, &reqs[requestCount++]);
+        }
+
+        if (rank != size - 1)
+        {
+            MPI_Isend(localRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, &reqs[requestCount++]); //tag 0 for bottom local edge / top 
+        }
+
+        // Only do work for the rows that do not require neighbor rows, allowing the non-blocking sends to occur
+        for (i = 1; i < totalLocalRows - 1; i++)
         {
             for (j = 0; j < N; j++)
             {
@@ -378,6 +383,8 @@ int main(int argc, char **argv)
                 }
             }
         }
+
+        MPI_Waitall(requestCount, reqs, stats);
 
         // Similarly to OpenMP implementation, we need to add all of the local change flags to a global change flag and use this
         // to determine if all processes should break.
