@@ -408,7 +408,7 @@ int main(int argc, char **argv)
     }
 
     // Regather the board to print to file.
-    MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gatherv(localBoard, totalLocalCells, MPI_INT, currentBoard, sendCounts, displacement, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (rank == 0)
     {
