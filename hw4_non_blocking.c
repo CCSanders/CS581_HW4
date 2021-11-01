@@ -217,8 +217,8 @@ int main(int argc, char **argv)
     int processData[2];
     int sendCounts[size];
     int displacement[size];
-    MPI_Request reqs[4];   // required variable for non-blocking calls
-    MPI_Status stats[4];   // required variable for Waitall routine
+    MPI_Request reqs[4]; // required variable for non-blocking calls
+    MPI_Status stats[4]; // required variable for Waitall routine
 
     // Restrict argument checking to just process 0, including setting up the gameboard and distributing the initial state.
     if (rank == 0)
@@ -337,7 +337,7 @@ int main(int argc, char **argv)
 
         if (rank != size - 1)
         {
-            MPI_Isend(localRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, &reqs[requestCount++]); //tag 0 for bottom local edge / top 
+            MPI_Isend(localRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, &reqs[requestCount++]); //tag 0 for bottom local edge / top
         }
 
         // Only do work for the rows that do not require neighbor rows, allowing the non-blocking sends to occur
@@ -385,6 +385,88 @@ int main(int argc, char **argv)
         }
 
         MPI_Waitall(requestCount, reqs, stats);
+
+        // Now that the requests are done, process the neighbor rows
+        for (j = 0; j < N; j++)
+        {
+            //do the top row first
+            i = 0;
+            index = i * N + j;
+            neighbors = sumOfNeighbors(localPreviousBoard, neighborRowTop, neighborRowBottom, i, j, N, totalLocalCells);
+            cellStatus = localPreviousBoard[index];
+
+            if (cellStatus == 1)
+            {
+                if (neighbors < 2)
+                {
+                    // Current cell dies of loneliness
+                    localBoard[index] = 0;
+                    localChangeFlag = 1;
+                }
+                else if (neighbors > 3)
+                {
+                    // Current cell dies of overpopulation
+                    localBoard[index] = 0;
+                    localChangeFlag = 1;
+                }
+                else
+                {
+                    localBoard[index] = 1;
+                }
+            }
+            else
+            {
+                if (neighbors == 3)
+                {
+                    //Current cell is not alive with exactly three neighbors, birth at this cell
+                    localBoard[index] = 1;
+                    localChangeFlag = 1;
+                }
+                else
+                {
+                    localBoard[index] = 0;
+                }
+            }
+
+            //then process the bottom row
+            i = totalLocalRows - 1;
+            index = i * N + j;
+            neighbors = sumOfNeighbors(localPreviousBoard, neighborRowTop, neighborRowBottom, i, j, N, totalLocalCells);
+            cellStatus = localPreviousBoard[index];
+
+            if (cellStatus == 1)
+            {
+                if (neighbors < 2)
+                {
+                    // Current cell dies of loneliness
+                    localBoard[index] = 0;
+                    localChangeFlag = 1;
+                }
+                else if (neighbors > 3)
+                {
+                    // Current cell dies of overpopulation
+                    localBoard[index] = 0;
+                    localChangeFlag = 1;
+                }
+                else
+                {
+                    localBoard[index] = 1;
+                }
+            }
+            else
+            {
+                if (neighbors == 3)
+                {
+                    //Current cell is not alive with exactly three neighbors, birth at this cell
+                    localBoard[index] = 1;
+                    localChangeFlag = 1;
+                }
+                else
+                {
+                    localBoard[index] = 0;
+                }
+            }
+        }
 
         // Similarly to OpenMP implementation, we need to add all of the local change flags to a global change flag and use this
         // to determine if all processes should break.
