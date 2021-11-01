@@ -368,11 +368,13 @@ int main(int argc, char **argv)
 
         MPI_Gather(localBoard, localN, MPI_INT, currentBoard, localN, MPI_INT, 0, MPI_COMM_WORLD);
 
+        /*
         if (rank == 0)
         {
             printf("Board after generation %d:\n", currentGeneration);
             print2DArray(currentBoard, N);
         }
+        */
 
         if (globalChangeFlag == 0)
         {
@@ -395,8 +397,10 @@ int main(int argc, char **argv)
     {
         endTime = getTime();
 
-        printf("Ending board:\n");
-        print2DArray(currentBoard, N);
+        if (N < 10) {
+            printf("Ending board:\n");
+            print2DArray(currentBoard, N);
+        }
 
         printf("Execution took %f s and lasted %d generations\n", endTime - startTime, currentGeneration);
         printf("Writing output to file: %s\n", fileName);
