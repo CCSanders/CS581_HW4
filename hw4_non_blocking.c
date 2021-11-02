@@ -193,11 +193,11 @@ void writeArrToFile(int *arr, int N, FILE *filePointer)
 }
 
 // END ARRAY UTILS
-/*
+
 int main(int argc, char **argv)
 {
-    //srand(time(NULL));
-    srand(12345);
+    srand(time(NULL));
+    //srand(12345);
 
     int size, rank, N, MAX_GENERATIONS;
 
@@ -516,12 +516,12 @@ int main(int argc, char **argv)
     MPI_Finalize();
     return 0;
 }
-*/
 
 /**
  * This function is a scriptable version of my program that allows me to pass in preset data for me to use 
  * while testing. (i.e. I can call my program 100 times automatically with certain data and assert correctness)
  */
+/*
 int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_GENERATIONS, int size, int rank)
 {
     srand(randomSeed);
@@ -795,4 +795,4 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
     free(neighborRowBottom);
 
     return currentGeneration;
-}
+}*/
