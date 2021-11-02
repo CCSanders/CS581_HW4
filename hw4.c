@@ -252,8 +252,11 @@ int main(int argc, char **argv)
         //printf("Starting board:\n");
         //print2DArray(currentBoard, N);
 
-        // Each process needs to know how big the board is, the maximum number generations, and the number of slices
+        // Each process needs to know how big the board is and the maximum number generations
         // Along with each process's slice of the board.
+        // I had a choice to either perform the string-to-integer conversion for the command line arguments again for every process,
+        // or just simply broadcast the validated arguments to the every process. I decided on the latter, though it likely makes
+        // little noticable difference. 
         processData[0] = N;
         processData[1] = MAX_GENERATIONS;
     }
