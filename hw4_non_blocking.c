@@ -196,8 +196,8 @@ void writeArrToFile(int *arr, int N, FILE *filePointer)
 
 int main(int argc, char **argv)
 {
-    srand(time(NULL));
-    //srand(12345);
+    //srand(time(NULL));
+    srand(12345);
 
     int size, rank, N, MAX_GENERATIONS;
 

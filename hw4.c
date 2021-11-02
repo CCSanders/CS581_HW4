@@ -195,8 +195,8 @@ void writeArrToFile(int *arr, int N, FILE *filePointer)
 ///*
 int main(int argc, char **argv)
 {
-    srand(time(NULL));
-    //srand(12345);
+    //srand(time(NULL));
+    srand(12345);
 
     int size, rank, N, MAX_GENERATIONS;
 
@@ -256,7 +256,7 @@ int main(int argc, char **argv)
         // Along with each process's slice of the board.
         // I had a choice to either perform the string-to-integer conversion for the command line arguments again for every process,
         // or just simply broadcast the validated arguments to the every process. I decided on the latter, though it likely makes
-        // little noticable difference. 
+        // little noticable difference.
         processData[0] = N;
         processData[1] = MAX_GENERATIONS;
     }
@@ -293,6 +293,9 @@ int main(int argc, char **argv)
     int *neighborRowTop = (int *)malloc(N * sizeof(int));
     int *neighborRowBottom = (int *)malloc(N * sizeof(int));
 
+    int neighborProcessUp = (rank - 1 + size) % size;
+    int neighborProcessDown = (rank + 1 + size) % size;
+
     MPI_Scatterv(currentBoard, sendCounts, displacement, MPI_INT, localBoard, totalLocalCells, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Scatterv(previousBoard, sendCounts, displacement, MPI_INT, localPreviousBoard, totalLocalCells, MPI_INT, 0, MPI_COMM_WORLD);
 
@@ -309,34 +312,32 @@ int main(int argc, char **argv)
 
     for (currentGeneration = 1; currentGeneration < MAX_GENERATIONS; currentGeneration++)
     {
-        //Populate local rows, initialize neighbor "ghost" cells to 0 (particularly useful for our first and last process, as they'll be avoiding some of the sends and recvs as below):
+        //Populate local rows
         for (i = 0; i < N; i++)
         {
             localRowTop[i] = localPreviousBoard[i];
             localRowBottom[i] = localPreviousBoard[N * (totalLocalRows - 1) + i];
-            neighborRowTop[i] = 0;
-            neighborRowBottom[i] = 0;
         }
 
         // Distribute local rows and receive neighboring rows. See logic examples.txt for the solution details.
-        if (rank != size - 1)
-        {
-            MPI_Send(localRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
-        }
+        MPI_Sendrecv(localRowBottom, N, MPI_INT, neighborProcessDown, 0, neighborRowTop, N, MPI_INT, neighborProcessUp, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(localRowTop, N, MPI_INT, neighborProcessUp, 0, neighborRowBottom, N, MPI_INT, neighborProcessDown, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-        if (rank != 0)
+        // Process 0 and size - 1 received the wrong top and bottom rows in order to simplify communication logic. We fix that here
+        if (rank == 0)
         {
-            MPI_Recv(neighborRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            for (int i = 0; i < N; i++)
+            {
+                neighborRowTop[i] = 0;
+            }
         }
-
-        if (rank != 0)
+        
+        if (rank == size - 1)
         {
-            MPI_Send(localRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD);
-        }
-
-        if (rank != size - 1)
-        {
-            MPI_Recv(neighborRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            for (int i = 0; i < N; i++)
+            {
+                neighborRowBottom[i] = 0;
+            }
         }
 
         for (i = 0; i < totalLocalRows; i++)
@@ -407,7 +408,7 @@ int main(int argc, char **argv)
 
         if (N < 10)
         {
-            printf("Ending board:\n");
+            printf("\nEnding board:\n");
             print2DArray(currentBoard, N);
         }
 
