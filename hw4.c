@@ -200,13 +200,13 @@ int main(int argc, char **argv)
 
     int size, rank, N, MAX_GENERATIONS;
 
-    double startTime, endTime;
+    double startTime = 0, endTime = 0;
 
     int *currentBoard = NULL;
     int *previousBoard = NULL;
 
     char fileName[BUFSIZ];
-    FILE *filePointer;
+    FILE *filePointer = NULL;
 
     MPI_Init(&argc, &argv);
 
@@ -438,7 +438,7 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
 {
     srand(randomSeed);
 
-    double startTime, endTime;
+    double startTime = 0, endTime = 0;
 
     int *currentBoard = NULL;
     int *previousBoard = NULL;
