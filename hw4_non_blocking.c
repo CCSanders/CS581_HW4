@@ -193,7 +193,7 @@ void writeArrToFile(int *arr, int N, FILE *filePointer)
 }
 
 // END ARRAY UTILS
-///*
+/*
 int main(int argc, char **argv)
 {
     //srand(time(NULL));
@@ -516,13 +516,12 @@ int main(int argc, char **argv)
     MPI_Finalize();
     return 0;
 }
-//*/
+*/
 
 /**
  * This function is a scriptable version of my program that allows me to pass in preset data for me to use 
  * while testing. (i.e. I can call my program 100 times automatically with certain data and assert correctness)
  */
-/*
 int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_GENERATIONS, int size, int rank)
 {
     srand(randomSeed);
@@ -534,6 +533,8 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
 
     int sendCounts[size];
     int displacement[size];
+    MPI_Request reqs[4]; // required variable for non-blocking calls
+    MPI_Status stats[4]; // required variable for Waitall routine
 
     if (rank == 0)
     {
@@ -602,28 +603,28 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
             neighborRowBottom[i] = 0;
         }
 
-        // Distribute local rows and receive neighboring rows. See logic examples.txt for the solution details.
-        if (rank != size - 1)
-        {
-            MPI_Send(localRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
-        }
-
+        int requestCount = 0;
         if (rank != 0)
         {
-            MPI_Recv(neighborRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-
-        if (rank != 0)
-        {
-            MPI_Send(localRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD);
+            MPI_Irecv(neighborRowTop, N, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, &reqs[requestCount++]);
         }
 
         if (rank != size - 1)
         {
-            MPI_Recv(neighborRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Irecv(neighborRowBottom, N, MPI_INT, rank + 1, 1, MPI_COMM_WORLD, &reqs[requestCount++]);
         }
 
-        for (i = 0; i < totalLocalRows; i++)
+        if (rank != 0)
+        {
+            MPI_Isend(localRowTop, N, MPI_INT, rank - 1, 1, MPI_COMM_WORLD, &reqs[requestCount++]);
+        }
+
+        if (rank != size - 1)
+        {
+            MPI_Isend(localRowBottom, N, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, &reqs[requestCount++]); //tag 0 for bottom local edge / top
+        }
+
+        for (i = 1; i < totalLocalRows - 1; i++)
         {
             for (j = 0; j < N; j++)
             {
@@ -662,6 +663,90 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
                     {
                         localBoard[index] = 0;
                     }
+                }
+            }
+        }
+
+        MPI_Waitall(requestCount, reqs, stats);
+
+        // Now that the requests are done, process the neighbor rows
+        for (j = 0; j < N; j++)
+        {
+            //do the top row first
+            i = 0;
+            index = i * N + j;
+            neighbors = sumOfNeighbors(localPreviousBoard, neighborRowTop, neighborRowBottom, i, j, N, totalLocalCells);
+            cellStatus = localPreviousBoard[index];
+
+            if (cellStatus == 1)
+            {
+                if (neighbors < 2)
+                {
+                    // Current cell dies of loneliness
+                    localBoard[index] = 0;
+                    localChangeFlag = 1;
+                }
+                else if (neighbors > 3)
+                {
+                    // Current cell dies of overpopulation
+                    localBoard[index] = 0;
+                    localChangeFlag = 1;
+                }
+                else
+                {
+                    localBoard[index] = 1;
+                }
+            }
+            else
+            {
+                if (neighbors == 3)
+                {
+                    //Current cell is not alive with exactly three neighbors, birth at this cell
+                    localBoard[index] = 1;
+                    localChangeFlag = 1;
+                }
+                else
+                {
+                    localBoard[index] = 0;
+                }
+            }
+
+            //then process the bottom row
+            i = totalLocalRows - 1;
+            index = i * N + j;
+            neighbors = sumOfNeighbors(localPreviousBoard, neighborRowTop, neighborRowBottom, i, j, N, totalLocalCells);
+            cellStatus = localPreviousBoard[index];
+
+            if (cellStatus == 1)
+            {
+                if (neighbors < 2)
+                {
+                    // Current cell dies of loneliness
+                    localBoard[index] = 0;
+                    localChangeFlag = 1;
+                }
+                else if (neighbors > 3)
+                {
+                    // Current cell dies of overpopulation
+                    localBoard[index] = 0;
+                    localChangeFlag = 1;
+                }
+                else
+                {
+                    localBoard[index] = 1;
+                }
+            }
+            else
+            {
+                if (neighbors == 3)
+                {
+                    //Current cell is not alive with exactly three neighbors, birth at this cell
+                    localBoard[index] = 1;
+                    localChangeFlag = 1;
+                }
+                else
+                {
+                    localBoard[index] = 0;
                 }
             }
         }
@@ -711,4 +796,3 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
 
     return currentGeneration;
 }
-*/
