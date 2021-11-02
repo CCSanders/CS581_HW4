@@ -1,0 +1,19 @@
+ 
+============================================================
+=====     Queued job information at submit time        =====
+============================================================
+  The submitted file is: hw4nb.sh
+  The time limit is 01:00:00 HH:MM:SS.
+  The target directory is: /home/ualclsa0024/CS581_HW4
+  The memory limit is: 1gb
+  The job will start running after: 2021-11-02T14:40:08
+  Job Name: hw4nbshSCRIPT
+  Virtual queue: class
+  QOS: --qos=class
+  Constraints: --constraint=dmc
+  Command typed:
+/apps/scripts/run_script_mpi hw4nb.sh     
+  Queue submit command:
+sbatch --qos=class -J hw4nbshSCRIPT --begin=2021-11-02T14:40:08 --requeue --mail-user=ccsanders6@crimson.ua.edu -o hw4nbshSCRIPT.o$SLURM_JOB_ID -t 01:00:00 -n 1 --mem-per-cpu=1000 --constraint=dmc 
+  Job number: 654151
+ 

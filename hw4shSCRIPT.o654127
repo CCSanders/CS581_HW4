@@ -1,0 +1,29 @@
+setting dmc scratch directory
+ 
+============================================================
+=====         Summary of your script job               =====
+============================================================
+  The script file is: hw4.sh
+  The time limit is 00:45:00 HH:MM:SS.
+  The target directory is: /home/ualclsa0024/CS581_HW4
+  The working directory is:  /scratch-local/ualclsa0024.hw4shSCRIPT.654127
+  The memory limit is: 1gb
+  The job will start running after: 2021-11-02T14:07:11
+  Job Name: hw4shSCRIPT
+  Virtual queue: class
+  QOS: --qos=class
+  Constraints: --constraint=dmc
+  Using  2  cores on master node  dmc5
+  Node list:  dmc5
+  Nodes:  dmc5 dmc5
+  Command typed:
+/apps/scripts/run_script_mpi hw4.sh     
+  Queue submit command:
+sbatch --qos=class -J hw4shSCRIPT --begin=2021-11-02T14:07:11 --requeue --mail-user=ccsanders6@crimson.ua.edu -o hw4shSCRIPT.o654127 -t 00:45:00 -n 2 --mem-per-cpu=500 --constraint=dmc 
+ 
+Execution took 288.357063 s and lasted 5000 generations
+Writing output to file: /scratch/ualclsa0024/output.5000.5000.2
+Execution took 299.531804 s and lasted 5000 generations
+Writing output to file: /scratch/ualclsa0024/output.5000.5000.2
+Execution took 277.737616 s and lasted 5000 generations
+Writing output to file: /scratch/ualclsa0024/output.5000.5000.2

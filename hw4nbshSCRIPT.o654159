@@ -1,0 +1,29 @@
+setting dmc scratch directory
+ 
+============================================================
+=====         Summary of your script job               =====
+============================================================
+  The script file is: hw4nb.sh
+  The time limit is 00:08:00 HH:MM:SS.
+  The target directory is: /home/ualclsa0024/CS581_HW4
+  The working directory is:  /scratch-local/ualclsa0024.hw4nbshSCRIPT.654159
+  The memory limit is: 1gb
+  The job will start running after: 2021-11-02T14:47:43
+  Job Name: hw4nbshSCRIPT
+  Virtual queue: class
+  QOS: --qos=class
+  Constraints: --constraint=dmc
+  Using  20  cores on master node  dmc78
+  Node list:  dmc78
+  Nodes:  dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78
+  Command typed:
+/apps/scripts/run_script_mpi hw4nb.sh     
+  Queue submit command:
+sbatch --qos=class -J hw4nbshSCRIPT --begin=2021-11-02T14:47:43 --requeue --mail-user=ccsanders6@crimson.ua.edu -o hw4nbshSCRIPT.o654159 -t 00:08:00 -n 20 --mem-per-cpu=50 --constraint=dmc 
+ 
+Execution took 18.662348 s and lasted 5000 generations
+Writing output to file: /scratch/ualclsa0024/output.nb.5000.5000.20
+Execution took 18.747802 s and lasted 5000 generations
+Writing output to file: /scratch/ualclsa0024/output.nb.5000.5000.20
+Execution took 18.688878 s and lasted 5000 generations
+Writing output to file: /scratch/ualclsa0024/output.nb.5000.5000.20

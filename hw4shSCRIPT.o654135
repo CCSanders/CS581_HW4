@@ -1,0 +1,29 @@
+setting dmc scratch directory
+ 
+============================================================
+=====         Summary of your script job               =====
+============================================================
+  The script file is: hw4.sh
+  The time limit is 00:30:00 HH:MM:SS.
+  The target directory is: /home/ualclsa0024/CS581_HW4
+  The working directory is:  /scratch-local/ualclsa0024.hw4shSCRIPT.654135
+  The memory limit is: 2gb
+  The job will start running after: 2021-11-02T14:15:47
+  Job Name: hw4shSCRIPT
+  Virtual queue: class
+  QOS: --qos=class
+  Constraints: --constraint=dmc
+  Using  20  cores on master node  dmc78
+  Node list:  dmc78
+  Nodes:  dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78 dmc78
+  Command typed:
+/apps/scripts/run_script_mpi hw4.sh     
+  Queue submit command:
+sbatch --qos=class -J hw4shSCRIPT --begin=2021-11-02T14:15:47 --requeue --mail-user=ccsanders6@crimson.ua.edu -o hw4shSCRIPT.o654135 -t 00:30:00 -n 20 --mem-per-cpu=100 --constraint=dmc 
+ 
+Execution took 21.230542 s and lasted 5000 generations
+Writing output to file: /scratch/ualclsa0024/output.5000.5000.20
+Execution took 21.335606 s and lasted 5000 generations
+Writing output to file: /scratch/ualclsa0024/output.5000.5000.20
+Execution took 21.469363 s and lasted 5000 generations
+Writing output to file: /scratch/ualclsa0024/output.5000.5000.20
