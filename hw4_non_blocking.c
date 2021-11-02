@@ -307,7 +307,7 @@ int main(int argc, char **argv)
         startTime = getTime();
     }
 
-    for (currentGeneration = 1; currentGeneration <= MAX_GENERATIONS; currentGeneration++)
+    for (currentGeneration = 1; currentGeneration < MAX_GENERATIONS; currentGeneration++)
     {
         //Populate local rows, initialize neighbor "ghost" cells to 0 (particularly useful for our first and last process, as they'll be avoiding some of the sends and recvs as below):
         for (i = 0; i < N; i++)
@@ -592,7 +592,7 @@ int main_test_bed(int randomSeed, int preSeeded, int *testData, int N, int MAX_G
         startTime = getTime();
     }
 
-    for (currentGeneration = 1; currentGeneration <= MAX_GENERATIONS; currentGeneration++)
+    for (currentGeneration = 1; currentGeneration < MAX_GENERATIONS; currentGeneration++)
     {
         //Populate local rows, initialize neighbor "ghost" cells to 0 (particularly useful for our first and last process, as they'll be avoiding some of the sends and recvs as below):
         for (i = 0; i < N; i++)

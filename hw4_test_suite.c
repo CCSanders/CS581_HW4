@@ -71,7 +71,7 @@ int main(int argc, char **argv)
             0, 0, 0, 0, 0,
             0, 0, 0, 0, 0};
 
-        assert(main_test_bed(0, 1, test_oscil_blinker, 5, 50, size, rank) == 51);
+        assert(main_test_bed(0, 1, test_oscil_blinker, 5, 50, size, rank) == 50);
     }
 
     if (6 >= size)
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
             0, 0, 0, 1, 1, 0,
             0, 0, 0, 0, 0, 0};
 
-        assert(main_test_bed(0, 1, test_oscil_beacon, 6, 50, size, rank) == 51);
+        assert(main_test_bed(0, 1, test_oscil_beacon, 6, 50, size, rank) == 50);
     }
 
     // Sanity test: make sure that the program executes the same way every time
